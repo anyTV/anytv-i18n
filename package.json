@@ -6,7 +6,8 @@
   "dependencies": {
     "anytv-node-importer": "0.0.7",
     "co": "^4.6.0",
-    "cuddle": "^1.1.2"
+    "cuddle": "^1.1.2",
+    "lodash": "^4.16.4"
   },
   "devDependencies": {
     "esdoc": "^0.4.3",
