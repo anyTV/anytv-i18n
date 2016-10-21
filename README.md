@@ -6,7 +6,7 @@ A module for app internationalization
 ## Install
 
 ```sh
-npm install git+https://git@gitlab.com:anytv/anytv-i18n.git -S
+npm install anytv-i18n@latest --save
 ```
 
 ## Introduction
