@@ -1,0 +1,43 @@
+{
+  "name": "anytv-i18n",
+  "version": "0.0.1",
+  "description": "A module for globalization",
+  "main": "index.js",
+  "dependencies": {
+    "anytv-node-importer": "0.0.7",
+    "co": "^4.6.0",
+    "cuddle": "^1.1.2"
+  },
+  "devDependencies": {
+    "esdoc": "^0.4.3",
+    "grunt": "^1.0.1",
+    "grunt-contrib-jshint": "^1.0.0",
+    "grunt-contrib-watch": "^1.0.0",
+    "grunt-rollup": "^0.8.0",
+    "mocha": "^3.1.1",
+    "mocha-lcov-reporter": "^1.0.0",
+    "rollup": "^0.36.1",
+    "should": "^11.1.1"
+  },
+  "scripts": {
+    "start": "grunt",
+    "build": "grunt build",
+    "test": "make test",
+    "test-dev": "export NODE_ENV=test && mocha --watch --recursive -R spec -t 5000 -s 100"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anyTV/anytv-i18n.git"
+  },
+  "keywords": [
+    "channel",
+    "youtube"
+  ],
+  "author": "anyTV",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/anyTV/anytv-i18n/issues"
+  },
+  "homepage": "https://github.com/anyTV/anytv-i18n",
+  "private": true
+}
