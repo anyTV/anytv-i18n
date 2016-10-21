@@ -9,6 +9,7 @@ var co = _interopDefault(require('co'));
 var fs = _interopDefault(require('fs'));
 
 var CONFIG = {
+    default: 'en',
     locale_dir: __dirname + '/_locales/'
 };
 
@@ -255,14 +256,21 @@ class i18n {
      * gets the translation for the key and replaces the variables
      * @public
      * @params {string}    key
-     * @params {object}    data
+     * @params {object}    variables
      * @return {string}    translation
      */
-    trans (key, _default, variables = {}) {
+    trans (key, variables = {}) {
 
-        let str = (this.translations[this.lang]
-            && this.translations[this.lang][key])
-            || _default;
+        let default_lang = this.config.get('default');
+        let str = '';
+
+        if (this.translations[this.lang]
+         && this.translations[this.lang][key]) {
+            str = this.translations[this.lang][key];
+        }
+        else {
+            str = this.translations[default_lang][key] || '';
+        }
 
         /**
          * Replace variables in the string
@@ -294,6 +302,14 @@ class i18n {
 
         this.languages = languages.data.languages;
 
+
+        let default_lang = this.config.get('default');
+
+        // if the default language is not on the languages array, add it
+        if (default_lang && !~this.languages.indexOf(default_lang)) {
+            this.languages.push(default_lang);
+        }
+
         yield this._check_cache();
     }
 
@@ -309,14 +325,21 @@ class i18n {
                 .promise()
         );
 
-        this.debug('from api', files.map(a => a.__translation_info.language));
+        files.forEach(file => {
 
-        files.forEach(file =>
-            file && fs.writeFileSync(
+            if (!file) {
+                return;
+            }
+
+            if (!('__translation_info' in file)) {
+                file.__translation_info = {language: 'en'};
+            }
+
+            fs.writeFileSync(
                 this.config.get('locale_dir') + file.__translation_info.language + '.json',
                 JSON.stringify(file, null, '\t')
-            )
-        );
+            );
+        });
 
         this._load_cache();
     }

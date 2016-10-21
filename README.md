@@ -21,6 +21,7 @@ i18n.configure({
     languages_url: 'http://translations.myapp.com/:project/languages',
     translation_url: 'http://translations.myapp.com/:project/:lang.json',
     locales_dir: '_locales',
+    default: 'en',
     debug: true
 });
 
@@ -29,11 +30,11 @@ i18n.use('freedom_dashboard')
 
 i18n.set('zh_TW');
 
-i18n.trans('greetings', 'Hello :name!', {
+i18n.trans('greetings', {
     name: 'Raven!'
 });
 
-i18n.trans('non_existent_key', 'default value');
+i18n.trans('non_existent_key'); // empty string
 
 
 ```
@@ -67,7 +68,7 @@ i18n.trans('non_existent_key', 'default value');
 * `locale_dir` directory where the translations will be cached. should be an absolute path with a trailing backslach. example: `/home/user/my-app/_locales/`
 * `debug` set to true if you want to debug
 * `logger` replaces the default logger
-> note: Only [Winston](https://github.com/winstonjs/winston)-like loggers are accepted
+  > note: Only [Winston](https://github.com/winstonjs/winston)-like loggers are accepted
 
 
 # Todo
