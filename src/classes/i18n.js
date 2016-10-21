@@ -15,7 +15,7 @@ export default class i18n {
     constructor () {
 
         // all translations
-        this.translations = void 0;
+        this.translations = {};
 
         // all available languages
         this.languages = void 0;
@@ -108,15 +108,17 @@ export default class i18n {
      * @params {object}    data
      * @return {string}    translation
      */
-    trans (key, variables = {}) {
+    trans (key, _default, variables = {}) {
+
+        let str = (this.translations[this.lang]
+            && this.translations[this.lang][key])
+            || _default;
 
         /**
          * Replace variables in the string
          * `Hello :name!` => `Hello Raven!`
          * `:name aloha!` => `Raven aloha!`
          */
-        let str = this.translations[this.lang][key];
-
         _(variables).forOwn((value, _key) => {
             str = str.replace(new RegExp(`:${_key}`, 'g'), value);
         });

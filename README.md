@@ -29,9 +29,7 @@ i18n.use('freedom_dashboard')
 
 i18n.set('zh_TW');
 
-i18n.trans('key');
-
-i18n.trans('key2', {
+i18n.trans('greetings', 'Hello :name!', {
     name: 'Raven!'
 });
 
@@ -60,8 +58,7 @@ i18n.trans('non_existent_key', 'default value');
 	"__translation_info": {
 		"language": "zh"
 	},
-	"key": "value",
-	"key2": "hello :name",
+	"greetings": "你好 :name",
 	...
 }
 ```
