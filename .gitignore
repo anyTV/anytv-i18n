@@ -18,6 +18,5 @@ node_modules
 trash
 sblm.sublime-workspace
 
-_locales
-
 test.js
+_locales/*.json
