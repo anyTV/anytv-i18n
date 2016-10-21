@@ -180,10 +180,6 @@ export default class i18n {
                 return;
             }
 
-            if (!('__translation_info' in file)) {
-                file.__translation_info = {language: 'en'};
-            }
-
             fs.writeFileSync(
                 this.config.get('locale_dir') + file.__translation_info.language + '.json',
                 JSON.stringify(file, null, '\t')
