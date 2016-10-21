@@ -56,14 +56,10 @@ i18n.trans('non_existent_key'); // empty string
 * `translation_url` url for getting json translations. `:project` will be replaced by the project you're using. `:lang` will be replaced by the language you're using. Exact format:
 ```json
 {
-	"__translation_info": {
-		"language": "zh"
-	},
 	"greetings": "你好 :name",
 	...
 }
 ```
-> note: __translation_info.language is required
 
 * `locale_dir` directory where the translations will be cached. should be an absolute path with a trailing backslach. example: `/home/user/my-app/_locales/`
 * `debug` set to true if you want to debug

@@ -2,7 +2,7 @@
 
 import importer from 'anytv-node-importer';
 import cudl from 'cuddle';
-import _ from 'lodash';
+import _  from 'lodash';
 import co from 'co';
 import fs from 'fs';
 
@@ -135,7 +135,6 @@ export default class i18n {
 
 
     _load_cache () {
-
         this.translations = importer.dirloadSync(this.config.get('locale_dir'));
         this.debug('from cache', Object.keys(this.translations));
         return this;
@@ -159,33 +158,29 @@ export default class i18n {
             this.languages.push(default_lang);
         }
 
-        yield this._check_cache();
+        this.languages.map(this.get_lang_files.bind(this));
     }
 
-    * _check_cache () {
+    get_lang_files (lang) {
+        cudl.get
+            .to(this.translations_url.replace(':lang', lang))
+            .args(lang)
+            .send({
+                ext: 'json',
+                lang
+            })
+            .then(this.copy_file.bind(this));
+    }
 
-        const files = yield this.languages.map(lang =>
-            cudl.get
-                .to(this.translations_url.replace(':lang', lang))
-                .send({
-                    ext: 'json',
-                    lang
-                })
-                .promise()
+    copy_file (err, result, request, args) {
+        const lang = args[0];
+
+        fs.writeFile(
+            this.config.get('locale_dir') + lang + '.json',
+            JSON.stringify(result, null, '\t'),
+            () => {}
         );
 
-        files.forEach(file => {
-
-            if (!file) {
-                return;
-            }
-
-            fs.writeFileSync(
-                this.config.get('locale_dir') + file.__translation_info.language + '.json',
-                JSON.stringify(file, null, '\t')
-            );
-        });
-
-        this._load_cache();
+        this.debug('Done copying', lang);
     }
 }
