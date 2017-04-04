@@ -30,7 +30,8 @@
   "files": [
     "LICENSE",
     "README.md",
-    "index.js"
+    "index.js",
+    "_locales/.gitkeep"
   ],
   "repository": {
     "type": "git",
