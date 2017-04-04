@@ -1,9 +1,8 @@
 'use strict';
 
 import importer from 'anytv-node-importer';
-import cudl from 'cuddle';
+import request from 'sync-request';
 import _  from 'lodash';
-import co from 'co';
 import fs from 'fs';
 
 import logger from './../logger';
@@ -81,9 +80,8 @@ export default class i18n {
      */
     load () {
 
+        this._get_languages();
         this._load_cache();
-        co(this._get_languages())
-            .catch(err => console.error(err));
 
         return this;
     }
@@ -140,13 +138,12 @@ export default class i18n {
         return this;
     }
 
-    * _get_languages () {
+    _get_languages () {
 
         this.debug('getting languages');
 
-        const languages = yield cudl.get
-            .to(this.languages_url)
-            .promise();
+        const res = request('GET',  this.languages_url);
+        const languages = JSON.parse(res.getBody('utf8'));
 
         this.languages = languages.data.languages;
 
@@ -162,23 +159,12 @@ export default class i18n {
     }
 
     get_lang_files (lang) {
-        cudl.get
-            .to(this.translations_url.replace(':lang', lang))
-            .args(lang)
-            .send({
-                ext: 'json',
-                lang
-            })
-            .then(this.copy_file.bind(this));
-    }
 
-    copy_file (err, result, request, args) {
-        const lang = args[0];
+        const res = request('GET',  this.translations_url.replace(':lang', lang));
 
-        fs.writeFile(
+        fs.writeFileSync(
             this.config.get('locale_dir') + lang + '.json',
-            JSON.stringify(result, null, '\t'),
-            () => {}
+            res.getBody('utf8')
         );
 
         this.debug('Done copying', lang);

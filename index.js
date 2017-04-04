@@ -3,9 +3,8 @@
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
 var importer = _interopDefault(require('anytv-node-importer'));
-var cudl = _interopDefault(require('cuddle'));
+var request = _interopDefault(require('sync-request'));
 var _ = _interopDefault(require('lodash'));
-var co = _interopDefault(require('co'));
 var fs = _interopDefault(require('fs'));
 
 var CONFIG = {
@@ -232,9 +231,8 @@ class i18n {
      */
     load () {
 
+        this._get_languages();
         this._load_cache();
-        co(this._get_languages())
-            .catch(err => console.error(err));
 
         return this;
     }
@@ -291,13 +289,12 @@ class i18n {
         return this;
     }
 
-    * _get_languages () {
+    _get_languages () {
 
         this.debug('getting languages');
 
-        const languages = yield cudl.get
-            .to(this.languages_url)
-            .promise();
+        const res = request('GET',  this.languages_url);
+        const languages = JSON.parse(res.getBody('utf8'));
 
         this.languages = languages.data.languages;
 
@@ -313,23 +310,12 @@ class i18n {
     }
 
     get_lang_files (lang) {
-        cudl.get
-            .to(this.translations_url.replace(':lang', lang))
-            .args(lang)
-            .send({
-                ext: 'json',
-                lang
-            })
-            .then(this.copy_file.bind(this));
-    }
 
-    copy_file (err, result, request, args) {
-        const lang = args[0];
+        const res = request('GET',  this.translations_url.replace(':lang', lang));
 
-        fs.writeFile(
+        fs.writeFileSync(
             this.config.get('locale_dir') + lang + '.json',
-            JSON.stringify(result, null, '\t'),
-            () => {}
+            res.getBody('utf8')
         );
 
         this.debug('Done copying', lang);
