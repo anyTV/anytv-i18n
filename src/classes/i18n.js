@@ -102,18 +102,33 @@ export default class i18n {
     /**
      * gets the translation for the key and replaces the variables
      * @public
+     * @params {string}    language
      * @params {string}    key
      * @params {object}    variables
      * @return {string}    translation
      */
-    trans (key, variables = {}) {
+    trans (lang, key, variables) {
+
+        // support for trans(key)
+        if (typeof key === 'undefined' && typeof variables === 'undefined') {
+            key = lang;
+            variables = {};
+            lang = this.lang;
+        }
+
+        // support for trans(key, variables)
+        if (typeof key === 'object') {
+            variables = key;
+            key = lang;
+            lang = this.lang;
+        }
 
         let default_lang = this.config.get('default');
         let str = '';
 
-        if (this.translations[this.lang]
-         && this.translations[this.lang][key]) {
-            str = this.translations[this.lang][key];
+        if (this.translations[lang]
+         && this.translations[lang][key]) {
+            str = this.translations[lang][key];
         }
         else {
             str = this.translations[default_lang][key] || '';
