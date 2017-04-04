@@ -126,12 +126,21 @@ export default class i18n {
         let default_lang = this.config.get('default');
         let str = '';
 
+
+        // try the specified language
         if (this.translations[lang]
          && this.translations[lang][key]) {
             str = this.translations[lang][key];
         }
+
+        // try the default language
+        else if (this.translations[default_lang]
+            && this.translations[default_lang][key]) {
+            str = this.translations[default_lang][key];
+        }
+
         else {
-            str = this.translations[default_lang][key] || '';
+            return key;
         }
 
         /**
