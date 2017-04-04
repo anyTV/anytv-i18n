@@ -95,7 +95,7 @@ export default class i18n {
      * @params {object}    variables
      * @return {string}    translation
      */
-    trans (lang, key, variables = {}) {
+    trans (lang, key, variables) {
 
         if (!this.loaded) {
             throw new Error('Language is not yet loaded. Please call .load() first');
@@ -115,9 +115,14 @@ export default class i18n {
             }
 
             // support for trans(key)
-            if (typeof key === 'undefined') {
+            else if (typeof key === 'undefined') {
                 key = lang;
                 lang = default_lang;
+            }
+
+            // support for trans(lang, key)
+            else {
+                variables = {};
             }
         }
 
