@@ -1,6 +1,6 @@
 {
   "name": "anytv-i18n",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A module for globalization",
   "main": "index.js",
   "dependencies": {
@@ -27,6 +27,11 @@
     "test": "make test",
     "test-dev": "export NODE_ENV=test && mocha --watch --recursive -R spec -t 5000 -s 100"
   },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "index.js"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/anyTV/anytv-i18n.git"
