@@ -19,9 +19,6 @@ export default class i18n {
         // all available languages
         this.languages = void 0;
 
-        // current language
-        this.lang = void 0;
-
         this.config = new Config();
 
         this.prefix = 'i18n ::';
@@ -87,19 +84,6 @@ export default class i18n {
     }
 
     /**
-     * sets the language to use in translate function
-     * @public
-     * @param {string} lang
-     * @example
-     * i18n.set('zh_TW')
-     * @return {i18n} itself
-     */
-    set (lang = 'en') {
-        this.lang = lang;
-        return this;
-    }
-
-    /**
      * gets the translation for the key and replaces the variables
      * @public
      * @params {string}    language
@@ -107,41 +91,13 @@ export default class i18n {
      * @params {object}    variables
      * @return {string}    translation
      */
-    trans (lang, key, variables) {
-
-        // support for trans(key)
-        if (typeof key === 'undefined' && typeof variables === 'undefined') {
-            key = lang;
-            variables = {};
-            lang = this.lang;
-        }
-
-        // support for trans(key, variables)
-        if (typeof key === 'object') {
-            variables = key;
-            key = lang;
-            lang = this.lang;
-        }
+    trans (lang, key, variables = {}) {
 
         let default_lang = this.config.get('default');
-        let str = '';
 
-
-        // try the specified language
-        if (this.translations[lang]
-         && this.translations[lang][key]) {
-            str = this.translations[lang][key];
-        }
-
-        // try the default language
-        else if (this.translations[default_lang]
-            && this.translations[default_lang][key]) {
-            str = this.translations[default_lang][key];
-        }
-
-        else {
-            return key;
-        }
+        let str =  _.get(this.translations, `${ lang }.${ key }`)
+                || _.get(this.translations, `${ default_lang }.${ key }`)
+                || key;
 
         /**
          * Replace variables in the string
