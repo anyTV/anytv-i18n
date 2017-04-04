@@ -19,6 +19,8 @@ export default class i18n {
         // all available languages
         this.languages = void 0;
 
+        this.loaded = false;
+
         this.config = new Config();
 
         this.prefix = 'i18n ::';
@@ -80,6 +82,8 @@ export default class i18n {
         this._get_languages();
         this._load_cache();
 
+        this.loaded = true;
+
         return this;
     }
 
@@ -92,6 +96,10 @@ export default class i18n {
      * @return {string}    translation
      */
     trans (lang, key, variables = {}) {
+
+        if (!this.loaded) {
+            throw new Error('Language is not yet loaded. Please call .load() first');
+        }
 
         let default_lang = this.config.get('default');
 
