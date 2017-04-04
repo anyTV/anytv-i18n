@@ -101,7 +101,26 @@ export default class i18n {
             throw new Error('Language is not yet loaded. Please call .load() first');
         }
 
+
         let default_lang = this.config.get('default');
+
+
+        if (typeof variables === 'undefined') {
+
+            // support for trans(key, variable)
+            if (typeof key === 'object') {
+                variables = key;
+                key = lang;
+                lang = default_lang;
+            }
+
+            // support for trans(key)
+            if (typeof key === 'undefined') {
+                key = lang;
+                lang = default_lang;
+            }
+        }
+
 
         let str =  _.get(this.translations, `${ lang }.${ key }`)
                 || _.get(this.translations, `${ default_lang }.${ key }`)
