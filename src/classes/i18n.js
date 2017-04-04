@@ -19,8 +19,7 @@ export default class i18n {
         // all available languages
         this.languages = void 0;
 
-        // current language
-        this.lang = void 0;
+        this.loaded = false;
 
         this.config = new Config();
 
@@ -83,41 +82,49 @@ export default class i18n {
         this._get_languages();
         this._load_cache();
 
-        return this;
-    }
+        this.loaded = true;
 
-    /**
-     * sets the language to use in translate function
-     * @public
-     * @param {string} lang
-     * @example
-     * i18n.set('zh_TW')
-     * @return {i18n} itself
-     */
-    set (lang = 'en') {
-        this.lang = lang;
         return this;
     }
 
     /**
      * gets the translation for the key and replaces the variables
      * @public
+     * @params {string}    language
      * @params {string}    key
      * @params {object}    variables
      * @return {string}    translation
      */
-    trans (key, variables = {}) {
+    trans (lang, key, variables = {}) {
+
+        if (!this.loaded) {
+            throw new Error('Language is not yet loaded. Please call .load() first');
+        }
+
 
         let default_lang = this.config.get('default');
-        let str = '';
 
-        if (this.translations[this.lang]
-         && this.translations[this.lang][key]) {
-            str = this.translations[this.lang][key];
+
+        if (typeof variables === 'undefined') {
+
+            // support for trans(key, variable)
+            if (typeof key === 'object') {
+                variables = key;
+                key = lang;
+                lang = default_lang;
+            }
+
+            // support for trans(key)
+            if (typeof key === 'undefined') {
+                key = lang;
+                lang = default_lang;
+            }
         }
-        else {
-            str = this.translations[default_lang][key] || '';
-        }
+
+
+        let str =  _.get(this.translations, `${ lang }.${ key }`)
+                || _.get(this.translations, `${ default_lang }.${ key }`)
+                || key;
 
         /**
          * Replace variables in the string

@@ -1,12 +1,10 @@
 {
   "name": "anytv-i18n",
-  "version": "0.0.5",
+  "version": "1.0.0",
   "description": "A module for globalization",
   "main": "index.js",
   "dependencies": {
     "anytv-node-importer": "0.0.7",
-    "co": "^4.6.0",
-    "cuddle": "^1.1.2",
     "lodash": "^4.16.4",
     "sync-request": "^4.0.1"
   },
@@ -30,7 +28,8 @@
   "files": [
     "LICENSE",
     "README.md",
-    "index.js"
+    "index.js",
+    "_locales/.gitkeep"
   ],
   "repository": {
     "type": "git",
