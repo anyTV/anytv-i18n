@@ -19,7 +19,7 @@ const i18n = require('anytv-18n');
 
 i18n.configure({
     languages_url: 'http://translations.myapp.com/:project/languages',
-    translation_url: 'http://translations.myapp.com/:project/:lang.json',
+    translations_url: 'http://translations.myapp.com/:project/:lang.json',
     locales_dir: '_locales',
     default: 'en',
     debug: true
@@ -28,9 +28,7 @@ i18n.configure({
 i18n.use('freedom_dashboard')
     .load();
 
-i18n.set('zh_TW');
-
-i18n.trans('greetings', {
+i18n.trans('zh_TW', 'greetings', {
     name: 'Raven!'
 });
 
