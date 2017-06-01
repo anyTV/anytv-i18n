@@ -172,7 +172,9 @@ export default class i18n {
 
     get_lang_files (lang) {
 
-        const res = request('GET',  this.translations_url.replace(':lang', lang));
+        // append a random string, to avoid getting a response from cache
+        const random_str = '&rand=' + ~~(Math.random() * 1000);
+        const res = request('GET',  this.translations_url.replace(':lang', lang) + random_str);
 
         fs.writeFileSync(
             this.config.get('locale_dir') + lang + '.json',
