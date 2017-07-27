@@ -26,13 +26,20 @@ i18n.configure({
 });
 
 i18n.use('freedom_dashboard')
-    .load();
+    .load()
+    .then(() => {
 
-i18n.trans('zh_TW', 'greetings', {
-    name: 'Raven!'
-});
+    	// function to call when everything is loaded
+        i18n.trans('zh_TW', 'greetings', {
+            name: 'Raven!'
+        });
 
-i18n.trans('non_existent_key'); // empty string
+        i18n.trans('non_existent_key'); // empty string
+    })
+    .catch(() => {
+        // function to call when there's an error
+    });
+
 
 
 ```
