@@ -36,7 +36,7 @@ describe('i18n', () => {
     }
 
 
-    it('should ', done => {
+    it('should work as expected', done => {
 
         mock_trans_server();
 
@@ -52,5 +52,21 @@ describe('i18n', () => {
                 done();
             })
             .catch(done);
+    });
+
+
+    it('should not work when server does not exist', done => {
+
+        nock('http://translations.tm')
+            .get('/test_project/languages')
+            .reply(404, {});
+
+        i18n.configure(config);
+
+        i18n.use(config.project)
+            .load()
+            .catch(err => {
+                done();
+            });
     });
 });

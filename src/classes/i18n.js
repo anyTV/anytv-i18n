@@ -172,6 +172,10 @@ export default class i18n {
                 return next(err);
             }
 
+            if (response.statusCode !== 200) {
+                return next(response);
+            }
+
             const languages = body;
 
             this.languages = languages.data.languages;
