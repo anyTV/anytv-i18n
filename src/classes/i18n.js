@@ -1,7 +1,8 @@
 'use strict';
 
 import importer from 'anytv-node-importer';
-import request from 'sync-request';
+import request from 'request';
+import async from 'async';
 import _  from 'lodash';
 import fs from 'fs';
 
@@ -79,12 +80,16 @@ export default class i18n {
      */
     load () {
 
-        this._get_languages();
-        this._load_cache();
+        return new Promise((resolve, reject) => {
+            this._get_languages(err => {
 
-        this.loaded = true;
+                if (err) {
+                    return reject(err);
+                }
 
-        return this;
+                resolve();
+            });
+        });
     }
 
     /**
@@ -144,43 +149,63 @@ export default class i18n {
     }
 
 
-    _load_cache () {
+    _load_files (next) {
+
         this.translations = importer.dirloadSync(this.config.get('locale_dir'));
-        this.debug('from cache', Object.keys(this.translations));
+        this.debug('from files', Object.keys(this.translations));
+
+        this.loaded = true;
+
+        // call callback
+        next();
+
         return this;
     }
 
-    _get_languages () {
+    _get_languages (next) {
 
         this.debug('getting languages');
 
-        const res = request('GET',  this.languages_url);
-        const languages = JSON.parse(res.getBody('utf8'));
+        request(this.languages_url, {json:true}, (err, response, body) => {
 
-        this.languages = languages.data.languages;
+            if (err) {
+                return next(err);
+            }
+
+            if (response.statusCode !== 200) {
+                return next(response);
+            }
+
+            const languages = body;
+
+            this.languages = languages.data.languages;
 
 
-        let default_lang = this.config.get('default');
+            let default_lang = this.config.get('default');
 
-        // if the default language is not on the languages array, add it
-        if (default_lang && !~this.languages.indexOf(default_lang)) {
-            this.languages.push(default_lang);
-        }
+            // if the default language is not on the languages array, add it
+            if (default_lang && !~this.languages.indexOf(default_lang)) {
+                this.languages.push(default_lang);
+            }
 
-        this.languages.map(this.get_lang_files.bind(this));
+            async.each(
+                this.languages,
+                this.get_lang_files.bind(this),
+                this._load_files.bind(this, next)
+            );
+        });
     }
 
-    get_lang_files (lang) {
+    get_lang_files (lang, cb) {
 
         // append a random string, to avoid getting a response from cache
         const random_str = '&rand=' + ~~(Math.random() * 1000);
-        const res = request('GET',  this.translations_url.replace(':lang', lang) + random_str);
+        const url = this.translations_url.replace(':lang', lang) + random_str;
+        const write_stream = fs.createWriteStream(this.config.get('locale_dir') + lang + '.json');
 
-        fs.writeFileSync(
-            this.config.get('locale_dir') + lang + '.json',
-            res.getBody('utf8')
-        );
+        request(url)
+            .pipe(write_stream)
+            .on('finish', cb);
 
-        this.debug('Done copying', lang);
     }
 }
