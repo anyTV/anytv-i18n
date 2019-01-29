@@ -1,7 +1,7 @@
 'use strict';
 
 import config from './config';
-import i18n from '../index';
+import i18n from '../src/index';
 import should from 'should';
 import nock from 'nock';
 

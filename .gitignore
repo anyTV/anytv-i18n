@@ -21,3 +21,4 @@ sblm.sublime-workspace
 _locales/*.json
 
 /index.js
+.idea

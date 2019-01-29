@@ -4,13 +4,13 @@
 module.exports = (grunt) => {
 
     grunt.initConfig({
-        jshint: {
-            files: [
+        eslint: {
+            src: [
                 'gruntfile.js',
                 'src/**/*.js'
             ],
             options: {
-                jshintrc: '.jshintrc'
+                configFile: '.eslintrc',
             }
         },
 
@@ -24,11 +24,22 @@ module.exports = (grunt) => {
             }
         },
 
+        mochaTest: {
+            test: {
+                src: ['test/**/*.js'],
+                options: {
+                    reporter: 'spec',
+                    timeout: 5000,
+                    clearRequireCache: true,
+                    require: 'babel-register'
+                },
+            },
+        },
 
         watch: {
           rollup: {
-            files: ['<%= jshint.files %>'],
-            tasks: ['jshint', 'rollup'],
+            files: ['<%= eslint.src %>'],
+            tasks: ['eslint', 'rollup'],
             options: {
                 spawn: false
             }
@@ -36,13 +47,14 @@ module.exports = (grunt) => {
         }
     });
 
-    grunt.loadNpmTasks('grunt-contrib-jshint');
+    grunt.loadNpmTasks('gruntify-eslint');
     grunt.loadNpmTasks('grunt-contrib-watch');
+    grunt.loadNpmTasks('grunt-mocha-test');
     grunt.loadNpmTasks('grunt-rollup');
 
-    grunt.registerTask('test', ['jshint']);
-    grunt.registerTask('test-watch', ['jshint', 'watch']);
+    grunt.registerTask('test', ['eslint', 'mochaTest']);
+    grunt.registerTask('test-watch', ['eslint', 'watch']);
     grunt.registerTask('build', ['rollup']);
-    grunt.registerTask('default', ['jshint', 'rollup', 'watch']);
+    grunt.registerTask('default', ['eslint', 'rollup', 'watch']);
 
 };
