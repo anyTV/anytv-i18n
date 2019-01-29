@@ -1,10 +1,10 @@
-'use strict';
+
 
 import config from './config';
 import i18n from '../src/index';
-import should from 'should';
 import nock from 'nock';
 
+import 'should';
 
 describe('i18n', () => {
 
@@ -47,7 +47,7 @@ describe('i18n', () => {
             .then(() => {
 
                 i18n.trans('hello', {name: 'jennifer'}).should.be.exactly('hi jennifer');
-                i18n.trans('fil', 'hello', {name: 'jennifer'}).should.be.exactly('haro jennifer');;
+                i18n.trans('fil', 'hello', {name: 'jennifer'}).should.be.exactly('haro jennifer');
 
                 done();
             })
@@ -65,7 +65,7 @@ describe('i18n', () => {
 
         i18n.use(config.project)
             .load()
-            .catch(err => {
+            .catch(() => {
                 done();
             });
     });

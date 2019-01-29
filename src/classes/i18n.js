@@ -1,4 +1,4 @@
-'use strict';
+
 
 import importer from 'anytv-node-importer';
 import request from 'request';
@@ -53,6 +53,7 @@ export default class i18n {
         }
 
         this.debug('configuration done', cfg);
+
         return this;
     }
 
@@ -68,6 +69,7 @@ export default class i18n {
         this.languages_url = this.config.get('languages_url').replace(':project', project);
         this.translations_url = this.config.get('translations_url').replace(':project', project);
         this.debug('API set', project);
+
         return this;
     }
 

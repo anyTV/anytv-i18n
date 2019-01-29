@@ -1,4 +1,4 @@
-'use strict';
+
 
 import CONFIG from './../config';
 
@@ -32,11 +32,13 @@ export default class Config {
         }
 
         this.prop[key] = value;
+
         return this;
     }
 
     ignore_global () {
         this.use_global = false;
+
         return this;
     }
 
@@ -44,7 +46,9 @@ export default class Config {
     _set_prop (prop) {
 
         for (let key in prop) {
-            this.prop[key] = prop[key];
+            if (prop.hasOwnProperty(key)) {
+                this.prop[key] = prop[key];
+            }
         }
 
         return this;
@@ -78,6 +82,7 @@ export default class Config {
         }
 
         this.PROP[key] = value;
+
         return this;
     }
 
@@ -85,7 +90,9 @@ export default class Config {
     static _SET_PROP (prop) {
 
         for (let key in prop) {
-            this.PROP[key] = prop[key];
+            if (prop.hasOwnProperty(key)) {
+                this.PROP[key] = prop[key];
+            }
         }
 
         return this;
