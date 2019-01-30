@@ -65,7 +65,10 @@ describe('i18n', () => {
 
         i18n.use(config.project)
             .load()
-            .catch(() => {
+            .catch(err => {
+                err.should.be.obj;
+                err.statusCode.should.be.eql(404);
+
                 done();
             });
     });
