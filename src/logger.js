@@ -1,4 +1,4 @@
-'use strict';
+
 
 import Config from './classes/Config';
 
@@ -59,7 +59,7 @@ const _exports = {};
 
     start();
 
-}());
+})();
 
 
 export default _exports;
