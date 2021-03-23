@@ -220,7 +220,7 @@ export default class i18n {
         new Promise(async (resolve, reject) => {
             if (
                 process.env.REFRESH_TRANSLATIONS
-                || !await this.version_match(translation_file_path)
+                || !await this.is_translation_valid(translation_file_path)
             ) {
                 // force re-download translations
                 await this.download_translations(url, translation_file_path);
@@ -232,7 +232,7 @@ export default class i18n {
             async.doWhilst(
                 async () => {
                     try {
-                        await this.check_file(translation_file_path);
+                        await this.is_translation_valid(translation_file_path);
                         retry_count = MAX_RETRY;
                     } catch (error) {
                         await this.download_translations(url, translation_file_path);
@@ -249,34 +249,16 @@ export default class i18n {
             .catch(cb);
     }
 
-    async open_translation_file (translation_file_path) {
-        /**
-         * Load file using readFile and JSON.parse. Don't use require as it
-         * caches loaded JSON
-         */
-        return JSON.parse(
-            await fs_promises.readFile(translation_file_path, 'utf8')
-        );
-    }
+    async is_translation_valid (translation_file_path) {
+        let translation;
 
-    async version_match (translation_file_path) {
         try {
-            const translation = await this.open_translation_file(translation_file_path);
-
-            const service_version = this.config.get('service_version');
-            const translation_version = _.get(
-                translation, '__translation_info.version'
+            translation = JSON.parse(
+                await fs_promises.readFile(translation_file_path, 'utf8')
             );
-
-            // when undefined, its en.json and most probably latest
-            return !translation_version || `v${service_version}` === translation_version;
         } catch (error) {
             return false;
         }
-    }
-
-    async check_file (translation_file_path) {
-        const translation = await this.open_translation_file(translation_file_path);
 
         const empty_translation = _.chain(translation)
             .keys()
@@ -284,8 +266,16 @@ export default class i18n {
             .value();
 
         if (empty_translation) {
-            throw new Error('Empty translation file');
+            return false;
         }
+
+        const service_version = this.config.get('service_version');
+        const translation_version = _.get(
+            translation, '__translation_info.version'
+        );
+
+        // when undefined, its en.json and most probably latest
+        return !translation_version || `v${service_version}` === translation_version;
     }
 
     async download_translations (url, path) {
