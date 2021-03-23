@@ -268,7 +268,7 @@ export default class i18n {
         );
 
         // when undefined, its en.json and most probably latest
-        return !translation_version || `v${service_version}` === translation_version
+        return !translation_version || `v${service_version}` === translation_version;
     }
 
     async check_file (translation_file_path) {
