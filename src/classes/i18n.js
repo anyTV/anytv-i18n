@@ -1,8 +1,8 @@
 
 
 import importer from 'anytv-node-importer';
-import request from 'request';
-import async from 'async';
+import axios from 'axios';
+import async, {retry} from 'async';
 import _  from 'lodash';
 import fs from 'fs';
 
@@ -92,16 +92,7 @@ export default class i18n {
      */
     load () {
 
-        return new Promise((resolve, reject) => {
-            this._get_languages(err => {
-
-                if (err) {
-                    return reject(err);
-                }
-
-                resolve();
-            });
-        });
+        return this.get_languages();
     }
 
     /**
@@ -161,49 +152,37 @@ export default class i18n {
     }
 
 
-    _load_files (next) {
+    load_files (cb) {
 
         this.translations = importer.dirloadSync(this.config.get('locale_dir'));
         this.debug('from files', Object.keys(this.translations));
 
         this.loaded = true;
-
-        // call callback
-        next();
-
-        return this;
+        cb();
     }
 
-    _get_languages (next) {
+    async get_languages () {
 
         this.debug('getting languages');
 
-        request(this.languages_url, {json:true}, (err, response, body) => {
+        const response = await axios.get(this.languages_url);
 
-            if (err) {
-                return next(err);
-            }
+        const languages = response.data;
 
-            if (response.statusCode !== 200) {
-                return next(response);
-            }
+        this.languages = languages.data.languages;
 
-            const languages = body;
+        let default_lang = this.config.get('default');
 
-            this.languages = languages.data.languages;
+        // if the default language is not on the languages array, add it
+        if (default_lang && !~this.languages.indexOf(default_lang)) {
+            this.languages.push(default_lang);
+        }
 
-
-            let default_lang = this.config.get('default');
-
-            // if the default language is not on the languages array, add it
-            if (default_lang && !~this.languages.indexOf(default_lang)) {
-                this.languages.push(default_lang);
-            }
-
+        return new Promise(resolve => {
             async.each(
                 this.languages,
                 this.get_lang_files.bind(this),
-                this._load_files.bind(this, next)
+                this.load_files.bind(this, resolve)
             );
         });
     }
@@ -217,36 +196,26 @@ export default class i18n {
 
         const translation_file_path = this.config.get('locale_dir') + lang + '.json';
 
-        new Promise(async (resolve, reject) => {
-            if (
-                process.env.REFRESH_TRANSLATIONS
-                || !await this.is_translation_valid(translation_file_path)
-            ) {
-                // force re-download translations
-                await this.download_translations(url, translation_file_path);
-            }
+        let retry_count = 0;
 
+        async.doWhilst(
+            async (async_cb) => {
+                const redownload = process.env.REFRESH_TRANSLATIONS
+                    || !await this.is_translation_valid(translation_file_path);
 
-            let retry_count = 0;
+                if (redownload) {
+                    await this.download_translations(url, translation_file_path);
 
-            async.doWhilst(
-                async () => {
-                    try {
-                        await this.is_translation_valid(translation_file_path);
-                        retry_count = MAX_RETRY;
-                    } catch (error) {
-                        await this.download_translations(url, translation_file_path);
-                        retry_count++;
-                    }
+                    retry_count++;
+                } else {
+                    retry_count = MAX_RETRY;
+                }
 
-                    return retry_count;
-                },
-                cb_res => cb_res < MAX_RETRY,
-                err => err? reject(err) : resolve()
-            );
-        })
-            .then(cb)
-            .catch(cb);
+                async_cb(retry_count);
+            },
+            (async_cb_res, next_cb) => next_cb(async_cb_res < MAX_RETRY),
+            err => cb(err ? err : null)
+        );
     }
 
     async is_translation_valid (translation_file_path) {
@@ -279,14 +248,20 @@ export default class i18n {
     }
 
     async download_translations (url, path) {
-        await fs_promises.unlink(path);
-
-        const write_stream = fs.createWriteStream(path);
-
-        return new Promise((resolve, reject) => {
-            request(url)
-                .pipe(write_stream)
-                .on('finish', err => err ? reject(err): resolve());
+        const response = await axios({
+            method: 'get',
+            url,
+            responseType: 'stream'
         });
+
+        return await new Promise((resolve, reject) => {
+            let file_handle = fs.createWriteStream(path, { autoClose: true});
+
+            response.data.pipe(file_handle);
+
+            file_handle.on('error', err => reject(err));
+            file_handle.on('finish', () => resolve());
+        });
+
     }
 }
