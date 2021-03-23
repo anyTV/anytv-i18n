@@ -260,15 +260,19 @@ export default class i18n {
     }
 
     async version_match (translation_file_path) {
-        const translation = await this.open_translation_file(translation_file_path);
+        try {
+            const translation = await this.open_translation_file(translation_file_path);
 
-        const service_version = this.config.get('service_version');
-        const translation_version = _.get(
-            translation, '__translation_info.version'
-        );
+            const service_version = this.config.get('service_version');
+            const translation_version = _.get(
+                translation, '__translation_info.version'
+            );
 
-        // when undefined, its en.json and most probably latest
-        return !translation_version || `v${service_version}` === translation_version;
+            // when undefined, its en.json and most probably latest
+            return !translation_version || `v${service_version}` === translation_version;
+        } catch (error) {
+            return false;
+        }
     }
 
     async check_file (translation_file_path) {
