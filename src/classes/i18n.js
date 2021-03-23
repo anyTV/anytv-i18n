@@ -6,6 +6,8 @@ import async from 'async';
 import _  from 'lodash';
 import fs from 'fs';
 
+const fs_promises = fs.promises;
+
 import logger from './../logger';
 import Config from './Config';
 
@@ -66,8 +68,16 @@ export default class i18n {
      * @return {i18n} itself
      */
     use (project) {
-        this.languages_url = this.config.get('languages_url').replace(':project', project);
-        this.translations_url = this.config.get('translations_url').replace(':project', project);
+        const service_version = `v${this.config.get('service_version')}`;
+
+        this.languages_url = this.config.get('languages_url')
+            .replace(':project', project)
+            .replace(':version', service_version);
+
+        this.translations_url = this.config.get('translations_url')
+            .replace(':project', project)
+            .replace(':version', service_version);
+
         this.debug('API set', project);
 
         return this;
@@ -199,15 +209,82 @@ export default class i18n {
     }
 
     get_lang_files (lang, cb) {
+        const MAX_RETRY = this.config.get('download_retry');
 
         // append a random string, to avoid getting a response from cache
         const random_str = '&rand=' + ~~(Math.random() * 1000);
         const url = this.translations_url.replace(':lang', lang) + random_str;
-        const write_stream = fs.createWriteStream(this.config.get('locale_dir') + lang + '.json');
 
-        request(url)
-            .pipe(write_stream)
-            .on('finish', cb);
+        const translation_file_path = this.config.get('locale_dir') + lang + '.json';
 
+        let promise_chain = Promise.resolve();
+        if (process.env.REFRESH_TRANSLATIONS) {
+            // force re-download translations
+            promise_chain = promise_chain
+                .then(() => this.download_translations(url, translation_file_path));
+        }
+
+        promise_chain
+            .then(() => {
+
+                let retry_count = 0;
+                async.doWhilst(
+                    async () => {
+                        try {
+                            await this.check(translation_file_path);
+                            retry_count = MAX_RETRY;
+                        } catch (error) {
+                            await this.download_translations(url, translation_file_path);
+                            retry_count++;
+                        }
+
+                        return retry_count;
+                    },
+                    cb_res => cb_res < MAX_RETRY,
+                    err => cb(err ? err : null)
+                );
+            });
+    }
+
+    async check (translation_file_path) {
+        /**
+         * Load file using readFile and JSON.parse. Don't use require as it
+         * caches loaded JSON
+         */
+        const translation = JSON.parse(
+            await fs_promises.readFile(translation_file_path, 'utf8')
+        );
+
+        const empty_translation = _.chain(translation)
+            .keys()
+            .isEmpty()
+            .value();
+
+        if (empty_translation) {
+            throw new Error('Empty translation file');
+        }
+
+        const service_version = this.config.get('service_version');
+        const translation_version = _.get(
+            translation, '__translation_info.version'
+        );
+
+        // when undefined, its en.json and most probably latest
+        if (
+            translation_version && `v${service_version}` !== translation_version
+        ) {
+            const message = `Version mismatch: v${service_version} !== ${translation_version}`;
+            throw new Error(message);
+        }
+    }
+
+    async download_translations (url, path) {
+        const write_stream = fs.createWriteStream(path);
+
+        return new Promise((resolve, reject) => {
+            request(url)
+                .pipe(write_stream)
+                .on('finish', err => err ? reject(err): resolve());
+        });
     }
 }
