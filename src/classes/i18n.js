@@ -2,7 +2,7 @@
 
 import importer from 'anytv-node-importer';
 import axios from 'axios';
-import async, {retry} from 'async';
+import async from 'async';
 import _  from 'lodash';
 import fs from 'fs';
 
@@ -187,7 +187,7 @@ export default class i18n {
         });
     }
 
-    get_lang_files (lang, cb) {
+    async get_lang_files (lang) {
         const MAX_RETRY = this.config.get('download_retry');
 
         // append a random string, to avoid getting a response from cache
@@ -198,8 +198,8 @@ export default class i18n {
 
         let retry_count = 0;
 
-        async.doWhilst(
-            async (async_cb) => {
+        return async.doWhilst(
+            async () => {
                 const redownload = process.env.REFRESH_TRANSLATIONS
                     || !await this.is_translation_valid(translation_file_path);
 
@@ -211,10 +211,10 @@ export default class i18n {
                     retry_count = MAX_RETRY;
                 }
 
-                async_cb(retry_count);
+                return retry_count;
             },
             (async_cb_res, next_cb) => next_cb(async_cb_res < MAX_RETRY),
-            err => cb(err ? err : null)
+            err => err ? err : null
         );
     }
 
