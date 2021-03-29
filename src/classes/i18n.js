@@ -1,10 +1,12 @@
 
 
 import importer from 'anytv-node-importer';
-import request from 'request';
+import axios from 'axios';
 import async from 'async';
 import _  from 'lodash';
 import fs from 'fs';
+
+const fs_promises = fs.promises;
 
 import logger from './../logger';
 import Config from './Config';
@@ -66,8 +68,16 @@ export default class i18n {
      * @return {i18n} itself
      */
     use (project) {
-        this.languages_url = this.config.get('languages_url').replace(':project', project);
-        this.translations_url = this.config.get('translations_url').replace(':project', project);
+        const service_version = `v${this.config.get('service_version')}`;
+
+        this.languages_url = this.config.get('languages_url')
+            .replace(':project', project)
+            .replace(':version', service_version);
+
+        this.translations_url = this.config.get('translations_url')
+            .replace(':project', project)
+            .replace(':version', service_version);
+
         this.debug('API set', project);
 
         return this;
@@ -82,16 +92,7 @@ export default class i18n {
      */
     load () {
 
-        return new Promise((resolve, reject) => {
-            this._get_languages(err => {
-
-                if (err) {
-                    return reject(err);
-                }
-
-                resolve();
-            });
-        });
+        return this.get_languages();
     }
 
     /**
@@ -151,63 +152,105 @@ export default class i18n {
     }
 
 
-    _load_files (next) {
+    load_files (cb) {
 
         this.translations = importer.dirloadSync(this.config.get('locale_dir'));
         this.debug('from files', Object.keys(this.translations));
 
         this.loaded = true;
-
-        // call callback
-        next();
-
-        return this;
+        cb();
     }
 
-    _get_languages (next) {
+    async get_languages () {
 
         this.debug('getting languages');
 
-        request(this.languages_url, {json:true}, (err, response, body) => {
+        const response = await axios.get(this.languages_url);
 
-            if (err) {
-                return next(err);
-            }
+        const languages = response.data;
 
-            if (response.statusCode !== 200) {
-                return next(response);
-            }
+        this.languages = languages.data.languages;
 
-            const languages = body;
+        let default_lang = this.config.get('default');
 
-            this.languages = languages.data.languages;
+        // if the default language is not on the languages array, add it
+        if (default_lang && !~this.languages.indexOf(default_lang)) {
+            this.languages.push(default_lang);
+        }
 
-
-            let default_lang = this.config.get('default');
-
-            // if the default language is not on the languages array, add it
-            if (default_lang && !~this.languages.indexOf(default_lang)) {
-                this.languages.push(default_lang);
-            }
-
+        return new Promise(resolve => {
             async.each(
                 this.languages,
                 this.get_lang_files.bind(this),
-                this._load_files.bind(this, next)
+                this.load_files.bind(this, resolve)
             );
         });
     }
 
-    get_lang_files (lang, cb) {
+    async get_lang_files (lang) {
+        const MAX_RETRY = this.config.get('download_retry');
 
         // append a random string, to avoid getting a response from cache
         const random_str = '&rand=' + ~~(Math.random() * 1000);
         const url = this.translations_url.replace(':lang', lang) + random_str;
-        const write_stream = fs.createWriteStream(this.config.get('locale_dir') + lang + '.json');
 
-        request(url)
-            .pipe(write_stream)
-            .on('finish', cb);
+        const translation_file_path = this.config.get('locale_dir') + lang + '.json';
+
+        for (let retry = 0; retry < MAX_RETRY; retry++) {
+            if (process.env.REFRESH_TRANSLATIONS
+                || !await this.is_translation_valid(translation_file_path)
+            ) {
+                await this.download_translations(url, translation_file_path);
+            } else {
+                break;
+            }
+        }
+    }
+
+    async is_translation_valid (translation_file_path) {
+        let translation;
+
+        try {
+            translation = JSON.parse(
+                await fs_promises.readFile(translation_file_path, 'utf8')
+            );
+        } catch (error) {
+            return false;
+        }
+
+        const empty_translation = _.chain(translation)
+            .keys()
+            .isEmpty()
+            .value();
+
+        if (empty_translation) {
+            return false;
+        }
+
+        const service_version = this.config.get('service_version');
+        const translation_version = _.get(
+            translation, '__translation_info.version'
+        );
+
+        // when undefined, its en.json and most probably latest
+        return !translation_version || `v${service_version}` === translation_version;
+    }
+
+    async download_translations (url, path) {
+        const response = await axios({
+            method: 'get',
+            url,
+            responseType: 'stream'
+        });
+
+        return await new Promise((resolve, reject) => {
+            let file_handle = fs.createWriteStream(path, { autoClose: true});
+
+            response.data.pipe(file_handle);
+
+            file_handle.on('error', err => reject(err));
+            file_handle.on('finish', () => resolve());
+        });
 
     }
 }
