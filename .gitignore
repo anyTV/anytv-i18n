@@ -19,7 +19,5 @@ package-lock.json
 trash
 sblm.sublime-workspace
 
-_locales/*.json
-
 /index.js
 .idea

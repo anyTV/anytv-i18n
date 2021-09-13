@@ -20,7 +20,7 @@ const i18n = require('anytv-18n');
 i18n.configure({
     languages_url: 'http://translations.myapp.com/:project/languages',
     translations_url: 'http://translations.myapp.com/:project/:lang.json',
-    locales_dir: '_locales',
+    locales_dir: '/../../translations',
     default: 'en',
     debug: true
 });
@@ -66,7 +66,7 @@ i18n.use('freedom_dashboard')
 }
 ```
 
-* `locale_dir` directory where the translations will be cached. should be an absolute path with a trailing backslach. example: `/home/user/my-app/_locales/`
+* `locale_dir` directory where the translations will be cached. should be an absolute path with a trailing backslach. example: `/home/user/my-app/translations/`
 * `debug` set to true if you want to debug
 * `logger` replaces the default logger
   > note: Only [Winston](https://github.com/winstonjs/winston)-like loggers are accepted
