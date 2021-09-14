@@ -1,14 +1,8 @@
-var fs = require('fs');
-var dir = __dirname + '/../../translations/';
-
-if (!fs. existsSync(dir)){
-    fs. mkdirSync(dir);
-}
+var locale_dir = __dirname + '_locales';
 
 export default {
     default: 'en',
-    locale_dir: dir,
-
+    locale_dir,
     download_retry: 3,
     service_version: 'latest',
 };

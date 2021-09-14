@@ -5,6 +5,7 @@ import axios from 'axios';
 import async from 'async';
 import _  from 'lodash';
 import fs from 'fs';
+import path from 'path';
 
 const fs_promises = fs.promises;
 
@@ -25,6 +26,7 @@ export default class i18n {
         this.loaded = false;
 
         this.config = new Config();
+        this.locales_folder = '';
 
         this.prefix = 'i18n ::';
         this.debug = logger.debug.bind(logger, this.prefix);
@@ -52,6 +54,12 @@ export default class i18n {
 
         if (cfg.logger) {
             logger.use(cfg.logger);
+        }
+
+        this.locales_folder = path.normalize(this.config.get('locale_dir'));
+
+        if (!fs.existsSync(this.locales_folder)){
+            fs.mkdirSync(this.locales_folder, { recursive: true });
         }
 
         this.debug('configuration done', cfg);
@@ -154,7 +162,7 @@ export default class i18n {
 
     load_files (cb) {
 
-        this.translations = importer.dirloadSync(this.config.get('locale_dir'));
+        this.translations = importer.dirloadSync(this.locales_folder);
         this.debug('from files', Object.keys(this.translations));
 
         this.loaded = true;
@@ -194,7 +202,8 @@ export default class i18n {
         const random_str = '&rand=' + ~~(Math.random() * 1000);
         const url = this.translations_url.replace(':lang', lang) + random_str;
 
-        const translation_file_path = this.config.get('locale_dir') + lang + '.json';
+
+        const translation_file_path = path.join([this.locales_folder, lang + '.json']);
 
         for (let retry = 0; retry < MAX_RETRY; retry++) {
             if (process.env.REFRESH_TRANSLATIONS
@@ -236,7 +245,7 @@ export default class i18n {
         return !translation_version || `v${service_version}` === translation_version;
     }
 
-    async download_translations (url, path) {
+    async download_translations (url, file_path) {
         const response = await axios({
             method: 'get',
             url,
@@ -244,7 +253,7 @@ export default class i18n {
         });
 
         return await new Promise((resolve, reject) => {
-            let file_handle = fs.createWriteStream(path, { autoClose: true});
+            let file_handle = fs.createWriteStream(file_path, { autoClose: true});
 
             response.data.pipe(file_handle);
 
