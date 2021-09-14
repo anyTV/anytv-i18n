@@ -27,7 +27,6 @@ export default class i18n {
 
         this.config = new Config();
         this.locale_folder = path.resolve(this.config.get('locale_dir'));
-        this.ensure_dir_existence(this.locale_folder);
 
         this.prefix = 'i18n ::';
         this.debug = logger.debug.bind(logger, this.prefix);
