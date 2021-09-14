@@ -20,7 +20,7 @@ const i18n = require('anytv-18n');
 i18n.configure({
     languages_url: 'http://translations.myapp.com/:project/languages',
     translations_url: 'http://translations.myapp.com/:project/:lang.json',
-    locale_dir: '_locales',
+    locale_dir: path.resolve('translations'),
     default: 'en',
     debug: true
 });

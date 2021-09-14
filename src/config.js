@@ -1,4 +1,6 @@
-var locale_dir = __dirname + '_locales';
+import path from 'path';
+
+const locale_dir = path.resolve(path.dirname(require.main.filename), 'translations');
 
 export default {
     default: 'en',

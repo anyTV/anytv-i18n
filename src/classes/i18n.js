@@ -26,7 +26,7 @@ export default class i18n {
         this.loaded = false;
 
         this.config = new Config();
-        this.locale_folder = path.normalize(this.config.get('locale_dir'));
+        this.locale_folder = path.resolve(this.config.get('locale_dir'));
         this.ensure_dir_existence(this.locale_folder);
 
         this.prefix = 'i18n ::';
@@ -57,7 +57,7 @@ export default class i18n {
             logger.use(cfg.logger);
         }
 
-        this.locale_folder = path.normalize(this.config.get('locale_dir'));
+        this.locale_folder = path.resolve(this.config.get('locale_dir'));
         this.ensure_dir_existence(this.locale_folder);
 
         this.debug('configuration done', cfg);
@@ -201,7 +201,7 @@ export default class i18n {
         const url = this.translations_url.replace(':lang', lang) + random_str;
 
 
-        const translation_file_path = path.join([this.locale_folder, lang + '.json']);
+        const translation_file_path = path.resolve(path.join(this.locale_folder, lang + '.json'));
 
         for (let retry = 0; retry < MAX_RETRY; retry++) {
             if (process.env.REFRESH_TRANSLATIONS
