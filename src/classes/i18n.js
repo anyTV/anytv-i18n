@@ -26,7 +26,8 @@ export default class i18n {
         this.loaded = false;
 
         this.config = new Config();
-        this.locales_folder = '';
+        this.locale_folder = path.normalize(this.config.get('locale_dir'));
+        this.ensure_dir_existence(this.locale_folder);
 
         this.prefix = 'i18n ::';
         this.debug = logger.debug.bind(logger, this.prefix);
@@ -56,11 +57,8 @@ export default class i18n {
             logger.use(cfg.logger);
         }
 
-        this.locales_folder = path.normalize(this.config.get('locale_dir'));
-
-        if (!fs.existsSync(this.locales_folder)){
-            fs.mkdirSync(this.locales_folder, { recursive: true });
-        }
+        this.locale_folder = path.normalize(this.config.get('locale_dir'));
+        this.ensure_dir_existence(this.locale_folder);
 
         this.debug('configuration done', cfg);
 
@@ -162,7 +160,7 @@ export default class i18n {
 
     load_files (cb) {
 
-        this.translations = importer.dirloadSync(this.locales_folder);
+        this.translations = importer.dirloadSync(this.locale_folder);
         this.debug('from files', Object.keys(this.translations));
 
         this.loaded = true;
@@ -203,7 +201,7 @@ export default class i18n {
         const url = this.translations_url.replace(':lang', lang) + random_str;
 
 
-        const translation_file_path = path.join([this.locales_folder, lang + '.json']);
+        const translation_file_path = path.join([this.locale_folder, lang + '.json']);
 
         for (let retry = 0; retry < MAX_RETRY; retry++) {
             if (process.env.REFRESH_TRANSLATIONS
@@ -261,5 +259,11 @@ export default class i18n {
             file_handle.on('finish', () => resolve());
         });
 
+    }
+
+    ensure_dir_existence(dir_path) {
+        if (!fs.existsSync(dir_path)){
+            fs.mkdirSync(dir_path, { recursive: true });
+        }
     }
 }
