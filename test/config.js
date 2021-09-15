@@ -1,5 +1,9 @@
-import path from 'path';
-const locale_dir = path.resolve(path.join('node_modules', 'anytv-i18n', 'translations'));
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const locale_dir = resolve(__dirname, 'translations');
 
 export default {
     languages_url: 'http://translations.tm/:project/languages',
