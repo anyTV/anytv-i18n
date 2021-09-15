@@ -1,6 +1,6 @@
 import path from 'path';
 
-const locale_dir = path.resolve(path.dirname(require.main.filename), 'translations');
+const locale_dir = path.resolve(path.join('node_modules', 'anytv-i18n', 'translations'));
 
 export default {
     default: 'en',
