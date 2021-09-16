@@ -30,13 +30,14 @@
     "start": "grunt",
     "build": "grunt build",
     "test": "grunt test",
-    "test-dev": "export NODE_ENV=test && mocha --watch --recursive -R spec -t 5000 -s 100"
+    "test-dev": "export NODE_ENV=test && mocha --watch --recursive -R spec -t 5000 -s 100",
+    "prepare": "grunt build"
   },
   "files": [
     "LICENSE",
     "README.md",
     "index.js",
-    "_locales/.gitkeep"
+    "translations/.gitkeep"
   ],
   "repository": {
     "type": "git",
