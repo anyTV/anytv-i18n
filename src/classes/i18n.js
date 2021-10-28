@@ -205,6 +205,7 @@ export default class i18n {
         for (let retry = 0; retry < MAX_RETRY; retry++) {
             if (process.env.REFRESH_TRANSLATIONS
                 || !await this.is_translation_valid(translation_file_path)
+                || lang === 'en'
             ) {
                 await this.download_translations(url, translation_file_path);
             } else {
