@@ -211,6 +211,7 @@ export default class i18n {
 
             languages = response.data;
 
+            // save LANGUAGES.json file
             await fs_promises.writeFile(
                 this.languages_path,
                 JSON.stringify(languages)
