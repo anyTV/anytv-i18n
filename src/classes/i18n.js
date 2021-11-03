@@ -174,7 +174,14 @@ export default class i18n {
 
         const service_version = this.config.get('service_version');
 
+        let languages = {};
+
         try {
+            // force download
+            if (process.env.REFRESH_TRANSLATIONS) {
+                throw new Error('force-refresh');
+            }
+
             const downloaded_version = (
                 await fs_promises.readFile(this.current_version_path)
             ).toString();
@@ -183,40 +190,26 @@ export default class i18n {
             if (downloaded_version === service_version) {
                 return Promise.resolve();
             }
-        } catch (error) {
-            // do nothing
-        }
-
-        this.debug('getting languages');
-
-        let languages = {};
-
-        try {
-
-            // force download
-            if (process.env.REFRESH_TRANSLATIONS) {
-                throw new Error('force-refresh');
-            }
 
             // try to load from file
             languages = JSON.parse(
                 await fs_promises.readFile(this.languages_path)
             );
-
         }
         catch (error) {
+            this.error('Verification error for', service_version, error);
 
             // download from server on error or REFRESH_TRANSLATIONS
             const response = await axios.get(this.languages_url);
 
             languages = response.data;
-
-            // save LANGUAGES.json file
-            await fs_promises.writeFile(
-                this.languages_path,
-                JSON.stringify(languages)
-            );
         }
+
+        // save LANGUAGES.json file
+        await fs_promises.writeFile(
+            this.languages_path,
+            JSON.stringify(languages)
+        );
 
         this.languages = languages.data.languages;
 
@@ -235,18 +228,11 @@ export default class i18n {
             );
         });
 
-        try {
-            // save version to VERSION file
-            return await fs_promises.writeFile(
-                this.current_version_path,
-                service_version
-            );
-
-        } catch (error) {
-            // can't save to file :(
-
-            return Promise.resolve();
-        }
+        // save version to VERSION file
+        return await fs_promises.writeFile(
+            this.current_version_path,
+            service_version
+        );
     }
 
     async get_lang_files (lang) {
