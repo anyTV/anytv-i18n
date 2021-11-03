@@ -57,6 +57,10 @@ export default class i18n {
         }
 
         this.locale_folder = path.resolve(this.config.get('locale_dir'));
+
+        this.languages_path = this.locale_folder + '/LANGUAGES.json';
+        this.current_version_path = this.locale_folder + '/VERSION';
+
         this.ensure_dir_existence(this.locale_folder);
 
         this.debug('configuration done', cfg);
@@ -168,11 +172,50 @@ export default class i18n {
 
     async get_languages () {
 
+        const service_version = this.config.get('service_version');
+
+        try {
+            const downloaded_version = (
+                await fs_promises.readFile(this.current_version_path)
+            ).toString();
+
+            // if version file is equal to package version, stop
+            if (downloaded_version === service_version) {
+                return Promise.resolve();
+            }
+        } catch (error) {
+            // do nothing
+        }
+
         this.debug('getting languages');
 
-        const response = await axios.get(this.languages_url);
+        let languages = {};
 
-        const languages = response.data;
+        try {
+
+            // force download
+            if (process.env.REFRESH_TRANSLATIONS) {
+                throw new Error('force-refresh');
+            }
+
+            // try to load from file
+            languages = JSON.parse(
+                await fs_promises.readFile(this.languages_path)
+            );
+
+        }
+        catch (error) {
+
+            // download from server on error or REFRESH_TRANSLATIONS
+            const response = await axios.get(this.languages_url);
+
+            languages = response.data;
+
+            await fs_promises.writeFile(
+                this.languages_path,
+                JSON.stringify(languages)
+            );
+        }
 
         this.languages = languages.data.languages;
 
@@ -183,13 +226,26 @@ export default class i18n {
             this.languages.push(default_lang);
         }
 
-        return new Promise(resolve => {
+        await new Promise(resolve => {
             async.each(
                 this.languages,
                 this.get_lang_files.bind(this),
                 this.load_files.bind(this, resolve)
             );
         });
+
+        try {
+            // save version to VERSION file
+            return await fs_promises.writeFile(
+                this.current_version_path,
+                service_version
+            );
+
+        } catch (error) {
+            // can't save to file :(
+
+            return Promise.resolve();
+        }
     }
 
     async get_lang_files (lang) {
