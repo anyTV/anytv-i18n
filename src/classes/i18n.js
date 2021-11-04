@@ -58,8 +58,7 @@ export default class i18n {
 
         this.locale_folder = path.resolve(this.config.get('locale_dir'));
 
-        this.languages_path = this.locale_folder + '/LANGUAGES.json';
-        this.current_version_path = this.locale_folder + '/VERSION';
+        this.metadata_file = this.locale_folder + '/meta.json';
 
         this.ensure_dir_existence(this.locale_folder);
 
@@ -182,19 +181,21 @@ export default class i18n {
                 throw new Error('force-refresh');
             }
 
-            const downloaded_version = (
-                await fs_promises.readFile(this.current_version_path)
-            ).toString();
+            // load languages and version from meta.json
+            languages = JSON.parse(
+                await fs_promises.readFile(this.metadata_file)
+            );
 
-            // if version file is equal to package version, stop
-            if (downloaded_version === service_version) {
-                return Promise.resolve();
+            // redownload on version mismatch
+            if (languages.version !== service_version) {
+                throw new Error('version-mismatch');
             }
 
-            // try to load from file
-            languages = JSON.parse(
-                await fs_promises.readFile(this.languages_path)
-            );
+            /**
+             * Since we have a valid meta.json, we'll assume the previous
+             * download was successful
+             */
+            return;
         }
         catch (error) {
             this.error('Verification error for', service_version, error);
@@ -205,9 +206,11 @@ export default class i18n {
             languages = response.data;
         }
 
-        // save LANGUAGES.json file
+        languages.version = service_version;
+
+        // save meta.json
         await fs_promises.writeFile(
-            this.languages_path,
+            this.metadata_file,
             JSON.stringify(languages)
         );
 
@@ -220,19 +223,13 @@ export default class i18n {
             this.languages.push(default_lang);
         }
 
-        await new Promise(resolve => {
+        return await new Promise(resolve => {
             async.each(
                 this.languages,
                 this.get_lang_files.bind(this),
                 this.load_files.bind(this, resolve)
             );
         });
-
-        // save version to VERSION file
-        return await fs_promises.writeFile(
-            this.current_version_path,
-            service_version
-        );
     }
 
     async get_lang_files (lang) {
