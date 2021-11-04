@@ -173,7 +173,7 @@ export default class i18n {
 
         const service_version = this.config.get('service_version');
 
-        let languages = {};
+        let meta = {};
 
         try {
             // force download
@@ -182,39 +182,31 @@ export default class i18n {
             }
 
             // load languages and version from meta.json
-            languages = JSON.parse(
+            meta = JSON.parse(
                 await fs_promises.readFile(this.metadata_file)
             );
 
             // redownload on version mismatch
-            if (languages.version !== service_version) {
+            if (meta.version !== service_version) {
                 throw new Error('version-mismatch');
             }
 
             /**
-             * Since we have a valid meta.json, we'll assume the previous
-             * download was successful
+             * Since we have a valid updated meta.json, we'll assume the
+             * previous download was successful
              */
             return;
         }
         catch (error) {
-            this.error('Verification error for', service_version, error);
-
             // download from server on error or REFRESH_TRANSLATIONS
             const response = await axios.get(this.languages_url);
 
-            languages = response.data;
+            meta = response.data.data;
         }
 
-        languages.version = service_version;
+        meta.version = service_version;
 
-        // save meta.json
-        await fs_promises.writeFile(
-            this.metadata_file,
-            JSON.stringify(languages)
-        );
-
-        this.languages = languages.data.languages;
+        this.languages = meta.languages;
 
         let default_lang = this.config.get('default');
 
@@ -223,13 +215,19 @@ export default class i18n {
             this.languages.push(default_lang);
         }
 
-        return await new Promise(resolve => {
+        await new Promise(resolve => {
             async.each(
                 this.languages,
                 this.get_lang_files.bind(this),
                 this.load_files.bind(this, resolve)
             );
         });
+
+        // save meta.json
+        await fs_promises.writeFile(
+            this.metadata_file,
+            JSON.stringify(meta)
+        );
     }
 
     async get_lang_files (lang) {
