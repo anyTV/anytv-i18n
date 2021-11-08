@@ -195,6 +195,8 @@ export default class i18n {
              * Since we have a valid updated meta.json, we'll assume the
              * previous download was successful
              */
+            await new Promise(resolve => this.load_files(resolve));
+
             return;
         }
         catch (error) {
