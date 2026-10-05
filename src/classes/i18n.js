@@ -6,11 +6,13 @@ import async from 'async';
 import _  from 'lodash';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 
 const fs_promises = fs.promises;
 
 import logger from './../logger';
 import Config from './Config';
+import { is_plain_object, translation_rejection } from './../translation_file';
 
 
 export default class i18n {
@@ -162,11 +164,58 @@ export default class i18n {
 
     load_files (cb) {
 
-        this.translations = importer.dirloadSync(this.locale_folder);
+        try {
+            this.translations = importer.dirloadSync(this.locale_folder);
+        }
+        catch (error) {
+            this.warn('could not load every translation file at once, loading them one by one', error.message);
+            this.translations = this.load_valid_files();
+        }
+
         this.debug('from files', Object.keys(this.translations));
 
         this.loaded = true;
         cb();
+    }
+
+    /**
+     * Reads every *.json file in the locale folder, skipping the ones that
+     * can't be read or parsed. A skipped language is missing from
+     * this.translations, so trans() falls back to the default language.
+     * Only used when importer.dirloadSync fails.
+     * @return {Object} translations keyed by file name
+     */
+    load_valid_files () {
+
+        const translations = {};
+
+        fs.readdirSync(this.locale_folder)
+            .filter(file => path.extname(file) === '.json')
+            .forEach(file => {
+                const name = path.basename(file, '.json');
+
+                try {
+                    const content = JSON.parse(
+                        fs.readFileSync(path.join(this.locale_folder, file), 'utf8')
+                    );
+
+                    if (!is_plain_object(content)) {
+                        throw new Error('not a JSON object');
+                    }
+
+                    translations[name] = content;
+                }
+                catch (error) {
+                    this.warn(`skipping ${file}, falling back to the default language`, error.message);
+                }
+            });
+
+        return translations;
+    }
+
+    warn (...args) {
+
+        logger.warn(this.prefix, ...args);
     }
 
     async get_languages () {
@@ -283,22 +332,66 @@ export default class i18n {
         return !translation_version || `v${service_version}` === translation_version;
     }
 
+    /**
+     * Downloads a translation file without ever leaving a broken file behind.
+     * The body goes to a temporary file in the same folder and only replaces
+     * file_path once it parses to a non-empty translation object. On any
+     * failure the previous file (if any) is kept.
+     * @param {string} url
+     * @param {string} file_path
+     * @return {Promise<boolean>} true when file_path was replaced
+     */
     async download_translations (url, file_path) {
-        const response = await axios({
-            method: 'get',
-            url,
-            responseType: 'stream'
-        });
 
-        return await new Promise((resolve, reject) => {
-            let file_handle = fs.createWriteStream(file_path, { autoClose: true});
+        const temp_path = `${file_path}.tmp-${crypto.randomBytes(6).toString('hex')}`;
 
-            response.data.pipe(file_handle);
+        try {
+            const response = await axios({
+                method: 'get',
+                url,
+                responseType: 'stream',
+                validateStatus: () => true
+            });
 
-            file_handle.on('error', err => reject(err));
-            file_handle.on('finish', () => resolve());
-        });
+            if (response.status < 200 || response.status >= 300) {
+                response.data.resume();
+                throw new Error(`HTTP ${response.status}`);
+            }
 
+            await new Promise((resolve, reject) => {
+                const file_handle = fs.createWriteStream(temp_path, { autoClose: true });
+
+                response.data.on('error', err => reject(err));
+                file_handle.on('error', err => reject(err));
+                file_handle.on('finish', () => resolve());
+
+                response.data.pipe(file_handle);
+            });
+
+            const rejection = translation_rejection(
+                await fs_promises.readFile(temp_path, 'utf8')
+            );
+
+            if (rejection) {
+                throw new Error(rejection);
+            }
+
+            await fs_promises.rename(temp_path, file_path);
+
+            this.debug('downloaded', file_path);
+
+            return true;
+        }
+        catch (error) {
+            this.warn(
+                `download of ${path.basename(file_path)} failed, keeping the previous file, if any`,
+                error.message
+            );
+
+            await fs_promises.unlink(temp_path).catch(() => {});
+
+            return false;
+        }
     }
 
     ensure_dir_existence(dir_path) {
